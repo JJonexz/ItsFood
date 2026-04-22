@@ -1,0 +1,23 @@
+{
+  "name": "itsfood",
+  "version": "1.0.0",
+  "description": "ItsFood Sitio Web",
+  "main": "shared.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JJonexz/ItsFood.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/JJonexz/ItsFood/issues"
+  },
+  "homepage": "https://github.com/JJonexz/ItsFood#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.0"
+  }
+}
