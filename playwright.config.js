@@ -27,8 +27,11 @@ module.exports = defineConfig({
   reporter: 'html',
 
   use: {
-    /* URL base del proyecto en XAMPP */
-    baseURL: 'http://localhost/ItsFood/',
+    /* Laragon (dominio .test automático) */
+    baseURL: 'http://itsfood.test/',
+
+    // XAMPP (comentar esta si usás Laragon)
+    // baseURL: 'http://localhost/ItsFood/',
 
     /* Capturar trace al reintentar un test fallido */
     trace: 'on-first-retry',
