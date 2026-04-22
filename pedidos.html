@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Its Food – Pedidos</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .pedido-card {
+    background: var(--sand); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 1rem; overflow: hidden;
+    animation: fadeUp 0.3s ease; border: 2.5px solid transparent;
+    transition: var(--transition);
+  }
+  .pedido-card:hover { border-color: var(--teal-light); }
+  .pc-header {
+    background: var(--brown); padding: 0.8rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  .pc-id { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 900; color: var(--white); }
+  .pc-tipo { font-size: 0.8rem; font-weight: 800; color: var(--sand-light); background: rgba(255,255,255,0.15); padding: 3px 10px; border-radius: 20px; }
+  .pc-fecha { font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-left: auto; }
+  .pc-body { padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .pc-products { font-size: 0.85rem; font-weight: 600; color: var(--text-mid); flex: 1; }
+  .pc-total { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: var(--teal-dark); }
+  .pc-items-count { font-size: 0.75rem; color: var(--text-light); font-weight: 700; margin-top: 2px; }
+  .pc-footer { padding: 0.6rem 1.25rem; background: rgba(139,115,85,0.1); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .empty-state {
+    text-align: center; padding: 4rem 2rem; color: var(--text-light);
+    background: var(--sand); border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .empty-state .es-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+  .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--text-mid); margin-bottom: 0.5rem; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
+  .pedidos-count { font-size: 0.85rem; font-weight: 700; color: var(--text-light); }
+  .pay-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 800;
+    background: rgba(61,122,122,0.15); color: var(--teal-dark);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="caja.html">
+    <div class="logo-heart">🌿</div>
+    <span class="logo-name">Its Food</span>
+  </a>
+  <a class="logo" href="index.html">
+    <div class="header-right"><span href="index.html" class="menu-label">Menu</span></div>
+  </a>
+</header>
+
+<div class="page-layout">
+  <nav class="sidebar">
+    <a href="caja.html"><span class="nav-dot"></span>Caja</a>
+    <a href="pedidos.html" class="active"><span class="nav-dot"></span>Pedidos</a>
+    <a href="ventas.html"><span class="nav-dot"></span>Ventas</a>
+    <a href="stock.html"><span class="nav-dot"></span>Stock</a>
+    <a href="empleados.html"><span class="nav-dot"></span>Empleados</a>
+  </nav>
+
+  <div class="content">
+    <div class="page-title fade-up">Pedidos</div>
+    <div class="toolbar fade-up">
+      <span class="pedidos-count" id="pedidos-count"></span>
+      <a href="caja.html" class="btn btn-teal">+ Nuevo pedido</a>
+    </div>
+    <div id="pedidos-list"></div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand"><strong>🌿 Its Food</strong><p>Lo más natural y saludable</p></div>
+    <div class="footer-col"><h4>Localidad</h4><p>Av. Verde 1420<br>Buenos Aires, AR</p></div>
+    <div class="footer-col"><h4>Contacto</h4><p>+54 11 4567-8910<br>hola@itsfood.com.ar</p></div>
+    <div class="footer-col"><h4>Horarios</h4><p>Lun–Vie: 8:00–22:00<br>Sáb–Dom: 9:00–21:00</p></div>
+  </div>
+  <div class="footer-bottom">@2026 Its Food</div>
+</footer>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="shared.js"></script>
+<script>
+  let db = IFData.load();
+
+  const PAY_ICONS = { efectivo:'💵', tarjeta:'💳', transferencia:'📲' };
+
+  function getPayLabel(p) {
+    if (p.medioPagoInfo && p.medioPagoInfo.tipo === 'mixto') {
+      const info = p.medioPagoInfo;
+      return `${PAY_ICONS[info.metodo1]||''} $${info.monto1.toFixed(2)} + ${PAY_ICONS[info.metodo2]||''} $${info.monto2.toFixed(2)}`;
+    }
+    const icon = PAY_ICONS[p.medioPago] || '';
+    return p.medioPago ? (icon + ' ' + p.medioPago.charAt(0).toUpperCase() + p.medioPago.slice(1)) : '—';
+  }
+
+  function renderPedidos() {
+    const list  = document.getElementById('pedidos-list');
+    const count = document.getElementById('pedidos-count');
+    const pedidosActivos = db.pedidos.filter(p => p.estado !== 'Hecho');
+    if (!pedidosActivos.length) {
+      count.textContent = 'Sin pedidos activos';
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="es-icon">📋</div>
+          <h3>Sin pedidos activos</h3>
+          <p>Creá tu primer pedido desde Caja</p>
+        </div>`;
+    } else {
+      count.textContent = pedidosActivos.length + ' pedido(s) activos';
+      list.innerHTML = [...pedidosActivos].reverse().map(p => {
+        const payLabel = getPayLabel(p);
+        return `
+        <div class="pedido-card fade-up">
+          <div class="pc-header">
+            <span class="pc-id">Pedido #${p.id}</span>
+            <span class="pc-tipo">${p.tipo || 'Mesa'}</span>
+            <span class="pc-fecha">${p.fecha || ''}</span>
+          </div>
+          <div class="pc-body">
+            <div>
+              <div class="pc-products">${p.productos}</div>
+              <div class="pc-items-count">${p.items} ítem(s)</div>
+              ${p.comentario ? `<div style="margin-top:6px;font-size:0.78rem;font-weight:700;color:var(--brown-dark);background:rgba(139,115,85,0.12);padding:4px 10px;border-radius:8px;display:inline-block;">📝 ${p.comentario}</div>` : ''}
+            </div>
+            <div style="text-align:right">
+              <div class="pc-total">$${p.total.toFixed(2)}</div>
+              <div class="pay-badge" style="margin-top:4px">${payLabel}</div>
+            </div>
+          </div>
+          <div class="pc-footer">
+            <span class="badge badge-green">En proceso</span>
+            <button class="btn btn-teal btn-sm" onclick="marcarHecho(${p.id})">✓ HECHO</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmDeletePedido(${p.id})">✕ Eliminar</button>
+          </div>
+        </div>`}).join('');
+    }
+    renderHistorial();
+  }
+
+  function marcarHecho(id) {
+    const idx = db.pedidos.findIndex(p => p.id === id);
+    if (idx === -1) return;
+    const pedido = db.pedidos[idx];
+    db.pedidos[idx].estado = 'Hecho';
+
+    // Registrar ventas SOLO al completar el pedido
+    const itemsData = pedido.itemsData || [];
+    itemsData.forEach(item => {
+      const v = db.ventas.find(v => v.producto === item.nombre);
+      if (v) v.cantidad += item.qty;
+      else db.ventas.push({ id: Date.now() + Math.random(), producto: item.nombre, cantidad: item.qty });
+    });
+
+    IFData.save(db);
+    renderPedidos();
+    showToast('Pedido marcado como HECHO', 'ok');
+  }
+
+  function confirmDeletePedido(id) {
+    const p = db.pedidos.find(x => x.id === id);
+    if (!p) return;
+    openConfirm('¿Cancelar pedido?', '¿Cancelar el Pedido #' + id + '? Se devolverá el stock de ingredientes.', () => {
+      const idx = db.pedidos.findIndex(x => x.id === id);
+      const pedido = db.pedidos[idx];
+
+      // Devolver stock al cancelar un pedido en proceso
+      if (pedido.estado !== 'Hecho') {
+        const itemsData = pedido.itemsData || [];
+        itemsData.forEach(item => {
+          const reqs = db.ingredientes[item.id] || [];
+          reqs.forEach(req => {
+            const s = db.stock.find(s => s.nombre === req.nombre);
+            if (s) s.cantidad += req.cantidad * item.qty;
+          });
+        });
+      }
+
+      db.pedidos.splice(idx, 1);
+      IFData.save(db);
+      renderPedidos();
+      showToast('Pedido #' + id + ' cancelado — stock restaurado', 'err');
+    });
+  }
+
+  function renderHistorial() {
+    let historialDiv = document.getElementById('historial-list');
+    if (!historialDiv) {
+      historialDiv = document.createElement('div');
+      historialDiv.id = 'historial-list';
+      historialDiv.style.marginTop = '2.5rem';
+      document.querySelector('.content').appendChild(historialDiv);
+    }
+    const historial = db.pedidos.filter(p => p.estado === 'Hecho');
+    if (!historial.length) {
+      historialDiv.innerHTML = `<div class="empty-state"><div class="es-icon">📜</div><h3>Sin historial</h3><p>No hay pedidos completados.</p></div>`;
+      return;
+    }
+    historialDiv.innerHTML = `
+      <div class="page-title fade-up" style="margin-top:2rem;">Historial de Pedidos</div>
+      ${[...historial].reverse().map(p => {
+        const payLabel = getPayLabel(p);
+        return `
+        <div class="pedido-card fade-up">
+          <div class="pc-header">
+            <span class="pc-id">Pedido #${p.id}</span>
+            <span class="pc-tipo">${p.tipo || 'Mesa'}</span>
+            <span class="pc-fecha">${p.fecha || ''}</span>
+          </div>
+          <div class="pc-body">
+            <div>
+              <div class="pc-products">${p.productos}</div>
+              <div class="pc-items-count">${p.items} ítem(s)</div>
+            </div>
+            <div style="text-align:right">
+              <div class="pc-total">$${p.total.toFixed(2)}</div>
+              <div class="pay-badge" style="margin-top:4px">${payLabel}</div>
+            </div>
+          </div>
+          <div class="pc-footer">
+            <span class="badge badge-green">Completado</span>
+          </div>
+        </div>`;
+      }).join('')}`;
+  }
+
+  renderPedidos();
+</script>
+</body>
+</html>

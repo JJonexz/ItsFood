@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Its Food – Ventas</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .ventas-top {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1rem; margin-bottom: 1.5rem;
+  }
+  .highlight-card {
+    background: var(--sand); border-radius: var(--radius);
+    padding: 1.25rem 1.4rem; box-shadow: var(--shadow); text-align: center;
+    transition: var(--transition);
+  }
+  .highlight-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .hc-label { font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-light); margin-bottom: 6px; }
+  .hc-value { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; color: var(--teal-dark); line-height: 1.1; }
+  .hc-sub   { font-size: 0.78rem; color: var(--text-light); font-weight: 600; margin-top: 4px; }
+  .period-strip {
+    background: var(--brown); border-radius: var(--radius);
+    padding: 0.9rem 1.5rem; color: var(--white);
+    font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700;
+    margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: center;
+    gap: 0.75rem; letter-spacing: -0.5px;
+  }
+  .chart-box {
+    background: var(--sand); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden; margin-bottom: 1.5rem;
+  }
+  .chart-header {
+    background: var(--brown); padding: 0.9rem 1.5rem; color: var(--white);
+    font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700;
+  }
+  .chart-body { padding: 1.25rem 1.5rem; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .bar-label { width: 170px; flex-shrink: 0; font-size: 0.82rem; font-weight: 700; color: var(--text-mid); }
+  .bar-track { flex: 1; height: 22px; background: var(--sand-pale); border-radius: 11px; overflow: hidden; }
+  .bar-fill  { height: 100%; background: linear-gradient(90deg, var(--teal-light), var(--teal-dark)); border-radius: 11px; transition: width 0.9s cubic-bezier(0.4,0,0.2,1); }
+  .bar-qty   { width: 35px; font-size: 0.82rem; font-weight: 900; color: var(--teal-dark); text-align: right; }
+  .section-gap { margin-top: 1.5rem; }
+
+  /* payment chart */
+  .pay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .pay-card {
+    background: var(--sand); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 1.25rem; text-align: center; transition: var(--transition);
+  }
+  .pay-card:hover { transform: translateY(-2px); }
+  .pay-icon { font-size: 2rem; margin-bottom: 8px; }
+  .pay-name { font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); margin-bottom: 4px; }
+  .pay-amount { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 900; color: var(--teal-dark); }
+  .pay-count { font-size: 0.75rem; color: var(--text-light); font-weight: 700; margin-top: 4px; }
+
+  @media (max-width: 600px) {
+    .ventas-top, .pay-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="caja.html">
+    <div class="logo-heart">🌿</div>
+    <span class="logo-name">Its Food</span>
+  </a>
+  <a class="logo" href="index.html">
+    <div class="header-right"><span href="index.html" class="menu-label">Menu</span></div>
+  </a>
+</header>
+
+<div class="page-layout">
+  <nav class="sidebar">
+    <a href="caja.html"><span class="nav-dot"></span>Caja</a>
+    <a href="pedidos.html"><span class="nav-dot"></span>Pedidos</a>
+    <a href="ventas.html" class="active"><span class="nav-dot"></span>Ventas</a>
+    <a href="stock.html"><span class="nav-dot"></span>Stock</a>
+    <a href="empleados.html"><span class="nav-dot"></span>Empleados</a>
+  </nav>
+
+  <div class="content">
+    <div class="page-title fade-up">Ventas</div>
+
+    <!-- Top KPIs -->
+    <div class="ventas-top fade-up" id="ventas-kpis"></div>
+
+    <!-- Period strip -->
+    <div class="period-strip fade-up" id="period-strip">📅 Marzo 2026</div>
+
+    <!-- Bar chart -->
+    <div class="chart-box fade-up">
+      <div class="chart-header">Cantidad vendida por producto</div>
+      <div class="chart-body" id="bars"></div>
+    </div>
+
+    <!-- Payment methods metric -->
+    <div class="page-title fade-up" style="font-size:1.5rem;margin-bottom:1rem">💳 Medios de pago</div>
+    <div class="pay-grid fade-up" id="pay-grid"></div>
+
+    <!-- Table -->
+    <div class="table-box section-gap fade-up">
+      <div class="table-box-header"><span>Detalle de ventas</span></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Ingresos est.</th>
+            <th>% del total</th>
+          </tr>
+        </thead>
+        <tbody id="ventas-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand"><strong>🌿 Its Food</strong><p>Lo más natural y saludable</p></div>
+    <div class="footer-col"><h4>Localidad</h4><p>Av. Verde 1420<br>Buenos Aires, AR</p></div>
+    <div class="footer-col"><h4>Contacto</h4><p>+54 11 4567-8910<br>hola@itsfood.com.ar</p></div>
+    <div class="footer-col"><h4>Horarios</h4><p>Lun–Vie: 8:00–22:00<br>Sáb–Dom: 9:00–21:00</p></div>
+  </div>
+  <div class="footer-bottom">@2026 Its Food</div>
+</footer>
+
+<script src="shared.js"></script>
+<script>
+  const db = IFData.load();
+
+  function render() {
+    const sorted = [...db.ventas].sort((a, b) => b.cantidad - a.cantidad);
+    const top    = sorted[0];
+    const totalU = db.ventas.reduce((s, v) => s + v.cantidad, 0);
+    const totalR = db.ventas.reduce((s, v) => {
+      const p = db.productos.find(p => p.nombre === v.producto);
+      return s + (p ? p.precio * v.cantidad : 0);
+    }, 0);
+
+    // KPIs
+    document.getElementById('ventas-kpis').innerHTML = `
+      <div class="highlight-card">
+        <div class="hc-label">💰 Ingresos</div>
+        <div class="hc-value">$${totalR.toFixed(2)}</div>
+        <div class="hc-sub">estimados totales</div>
+      </div>
+      <div class="highlight-card">
+        <div class="hc-label">📦 Unidades</div>
+        <div class="hc-value">${totalU}</div>
+        <div class="hc-sub">productos vendidos</div>
+      </div>
+      <div class="highlight-card">
+        <div class="hc-label">⭐ Más vendido</div>
+        <div class="hc-value" style="font-size:1.3rem">${top ? top.producto : '—'}</div>
+        <div class="hc-sub">${top ? top.cantidad + ' unidades' : ''}</div>
+      </div>`;
+
+    // Period
+    const now = new Date();
+    document.getElementById('period-strip').innerHTML =
+      `📅 ${now.toLocaleDateString('es-AR', {month:'long', year:'numeric'})}`;
+
+    // Bars
+    const max = sorted[0]?.cantidad || 1;
+    document.getElementById('bars').innerHTML = sorted.map(v => {
+      const p = db.productos.find(x => x.nombre === v.producto);
+      return `
+        <div class="bar-row">
+          <div class="bar-label">${p ? p.emoji : '🌱'} ${v.producto}</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${(v.cantidad/max*100).toFixed(1)}%"></div>
+          </div>
+          <div class="bar-qty">${v.cantidad}</div>
+        </div>`;
+    }).join('');
+
+    // Payment methods
+    const payDefs = [
+      { key: 'efectivo',      icon: '💵', label: 'Efectivo' },
+      { key: 'tarjeta',       icon: '💳', label: 'Tarjeta' },
+      { key: 'transferencia', icon: '📲', label: 'Transferencia' }
+    ];
+    const pedidosHechos = (db.pedidos || []).filter(p => p.estado === 'Hecho' || p.estado === 'Completado');
+    const payGrid = document.getElementById('pay-grid');
+    payGrid.innerHTML = payDefs.map(pd => {
+      let total = 0; let count = 0;
+      pedidosHechos.forEach(p => {
+        if (p.medioPagoInfo && p.medioPagoInfo.tipo === 'mixto') {
+          if (p.medioPagoInfo.metodo1 === pd.key) { total += p.medioPagoInfo.monto1 || 0; count++; }
+          if (p.medioPagoInfo.metodo2 === pd.key) { total += p.medioPagoInfo.monto2 || 0; count++; }
+        } else if (p.medioPago === pd.key) {
+          total += p.total || 0; count++;
+        }
+      });
+      return `
+        <div class="pay-card">
+          <div class="pay-icon">${pd.icon}</div>
+          <div class="pay-name">${pd.label}</div>
+          <div class="pay-amount">$${total.toFixed(2)}</div>
+          <div class="pay-count">${count} uso(s)</div>
+        </div>`;
+    }).join('');
+
+    // Table
+    document.getElementById('ventas-tbody').innerHTML = sorted.map(v => {
+      const p   = db.productos.find(x => x.nombre === v.producto);
+      const rev = p ? (p.precio * v.cantidad).toFixed(2) : '—';
+      const pct = totalU ? ((v.cantidad / totalU) * 100).toFixed(1) : 0;
+      return `
+        <tr>
+          <td><strong>${p ? p.emoji : '🌱'} ${v.producto}</strong></td>
+          <td>${v.cantidad}</td>
+          <td>$${rev}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;height:8px;background:var(--sand-pale);border-radius:4px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:var(--teal);border-radius:4px"></div>
+              </div>
+              <span style="font-size:0.78rem;font-weight:800;color:var(--teal-dark)">${pct}%</span>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  render();
+</script>
+</body>
+</html>

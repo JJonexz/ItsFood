@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Its Food – Stock</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .stock-toolbar {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin-bottom: 1.25rem; flex-wrap: wrap;
+  }
+  .stock-toolbar .spacer { flex: 1; }
+  .filter-btn {
+    padding: 0.45rem 1rem; border-radius: 20px;
+    border: 2px solid var(--sand-light); background: var(--cream);
+    font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 0.8rem;
+    cursor: pointer; transition: var(--transition); color: var(--text-mid);
+  }
+  .filter-btn:hover { border-color: var(--teal); color: var(--teal-dark); }
+  .filter-btn.active { background: var(--teal); color: var(--white); border-color: var(--teal); }
+
+  .stock-kpis {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1rem; margin-bottom: 1.25rem;
+  }
+
+  /* qty pop-up */
+  .qty-wrap { position: relative; display: inline-block; }
+  .qty-popup {
+    display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%);
+    background: var(--teal-dark); color: var(--white);
+    border-radius: var(--radius-sm); padding: 10px 14px;
+    box-shadow: var(--shadow-lg); z-index: 50; white-space: nowrap;
+    animation: popIn 0.2s ease;
+    min-width: 160px;
+  }
+  .qty-popup::after {
+    content: ''; position: absolute; top: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: var(--teal-dark);
+  }
+  .qty-popup label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--teal-light); display: block; margin-bottom: 6px; }
+  .qty-popup-row { display: flex; gap: 6px; align-items: center; }
+  .qty-popup input {
+    width: 60px; padding: 4px 8px; border-radius: 6px; border: 2px solid var(--teal-light);
+    background: rgba(255,255,255,0.15); color: var(--white); font-family: 'Nunito', sans-serif;
+    font-weight: 800; font-size: 0.9rem; text-align: center; outline: none;
+  }
+  .qty-popup input:focus { border-color: var(--sand-light); }
+  .qty-popup-btn {
+    padding: 4px 10px; border-radius: 6px; border: none; cursor: pointer;
+    font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 0.78rem;
+    background: var(--sand); color: var(--teal-dark); transition: var(--transition);
+  }
+  .qty-popup-btn:hover { background: var(--white); }
+
+  .edit-btn {
+    background: none; border: 2px solid var(--teal-light); border-radius: 6px;
+    padding: 3px 8px; font-size: 0.75rem; font-weight: 800; color: var(--teal-dark);
+    cursor: pointer; transition: var(--transition);
+  }
+  .edit-btn:hover { background: var(--teal); color: var(--white); border-color: var(--teal); }
+
+  /* section divider */
+  .section-title {
+    font-family: 'Playfair Display', serif; font-size: 1.6rem;
+    font-weight: 900; color: var(--text-dark); margin: 2rem 0 1rem;
+    letter-spacing: -0.5px;
+  }
+
+  /* productos cards */
+  .prod-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
+    gap: 1rem; margin-bottom: 2rem;
+  }
+  .prod-card {
+    background: var(--sand); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 1rem 0.9rem;
+    text-align: center; border: 2.5px solid transparent;
+    transition: var(--transition);
+  }
+  .prod-card:hover { border-color: var(--teal-light); transform: translateY(-2px); }
+  .prod-card .pc-emoji { font-size: 2rem; margin-bottom: 6px; }
+  .prod-card .pc-name  { font-weight: 800; font-size: 0.85rem; margin-bottom: 4px; }
+  .prod-card .pc-price { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: var(--teal-dark); margin-bottom: 4px; }
+  .prod-card .pc-cat   { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); margin-bottom: 8px; }
+  .prod-card .pc-actions { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
+
+  /* ingredient tags */
+  .ing-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .ing-tag {
+    background: rgba(61,122,122,0.12); color: var(--teal-dark);
+    font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 12px;
+  }
+
+  /* modal ingredientes list */
+  .ing-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .ing-item {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--cream); border-radius: 8px; padding: 6px 10px;
+  }
+  .ing-item span { flex: 1; font-size: 0.82rem; font-weight: 700; }
+  .ing-remove {
+    background: none; border: none; color: var(--danger); cursor: pointer;
+    font-size: 0.9rem; font-weight: 900; padding: 0 4px;
+  }
+  .ing-add-row { display: flex; gap: 6px; margin-top: 6px; }
+  .ing-add-row select, .ing-add-row input {
+    flex: 1; padding: 0.5rem 0.75rem; border: 2px solid var(--sand-light);
+    border-radius: var(--radius-sm); font-family: 'Nunito', sans-serif;
+    font-size: 0.82rem; font-weight: 600; color: var(--text-dark);
+    background: var(--cream); outline: none;
+  }
+
+  @media (max-width: 600px) { .stock-kpis { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="caja.html">
+    <div class="logo-heart">🌿</div>
+    <span class="logo-name">Its Food</span>
+  </a>
+  <a class="logo" href="index.html">
+    <div class="header-right"><span href="index.html" class="menu-label">Menu</span></div>
+  </a>
+</header>
+
+<div class="page-layout">
+  <nav class="sidebar">
+    <a href="caja.html"><span class="nav-dot"></span>Caja</a>
+    <a href="pedidos.html"><span class="nav-dot"></span>Pedidos</a>
+    <a href="ventas.html"><span class="nav-dot"></span>Ventas</a>
+    <a href="stock.html" class="active"><span class="nav-dot"></span>Stock</a>
+    <a href="empleados.html"><span class="nav-dot"></span>Empleados</a>
+  </nav>
+
+  <div class="content">
+    <div class="page-title fade-up">Stock</div>
+
+    <!-- KPIs -->
+    <div class="stock-kpis fade-up" id="stock-kpis"></div>
+
+    <!-- Toolbar -->
+    <div class="stock-toolbar fade-up">
+      <input type="text" class="search-input" placeholder="🔍 Buscar…" id="search" oninput="applyFilter()">
+      <button class="filter-btn active" data-filter="all"       onclick="setFilter('all',    this)">Todos</button>
+      <button class="filter-btn"        data-filter="Disponible" onclick="setFilter('Disponible', this)">Disponible</button>
+      <button class="filter-btn"        data-filter="Bajo stock" onclick="setFilter('Bajo stock', this)">Bajo stock</button>
+      <button class="filter-btn"        data-filter="Sin stock"  onclick="setFilter('Sin stock',  this)">Sin stock</button>
+      <div class="spacer"></div>
+      <button class="btn btn-teal" onclick="openModal('modal-stock')">+ Agregar ingrediente</button>
+    </div>
+
+    <!-- Ingredientes Table -->
+    <div class="table-box fade-up">
+      <div class="table-box-header">
+        <span>Inventario de Ingredientes</span>
+        <span id="stock-count" style="font-size:0.8rem;font-weight:600;opacity:0.7"></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Ingrediente</th>
+            <th>Fecha</th>
+            <th>Ubicación</th>
+            <th>Precio</th>
+            <th>Cantidad</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="stock-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Productos section -->
+    <div class="section-title fade-up">🍽️ Productos del menú</div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:1rem" class="fade-up">
+      <button class="btn btn-teal" onclick="openAddProducto()">+ Agregar producto</button>
+    </div>
+    <div class="prod-grid fade-up" id="prod-grid"></div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand"><strong>🌿 Its Food</strong><p>Lo más natural y saludable</p></div>
+    <div class="footer-col"><h4>Localidad</h4><p>Av. Verde 1420<br>Buenos Aires, AR</p></div>
+    <div class="footer-col"><h4>Contacto</h4><p>+54 11 4567-8910<br>hola@itsfood.com.ar</p></div>
+    <div class="footer-col"><h4>Horarios</h4><p>Lun–Vie: 8:00–22:00<br>Sáb–Dom: 9:00–21:00</p></div>
+  </div>
+  <div class="footer-bottom">@2026 Its Food</div>
+</footer>
+
+<!-- MODAL AGREGAR INGREDIENTE -->
+<div class="modal-overlay" id="modal-stock">
+  <div class="modal">
+    <h2>📦 Nuevo ingrediente</h2>
+    <div class="form-group">
+      <label>Nombre</label>
+      <input type="text" id="s-nombre" placeholder="Ej: Tofu orgánico">
+      <div class="form-error" id="err-s-nombre">Campo requerido</div>
+    </div>
+    <div class="form-group">
+      <label>Ubicación</label>
+      <input type="text" id="s-ubicacion" placeholder="Ej: Depósito A">
+      <div class="form-error" id="err-s-ubicacion">Campo requerido</div>
+    </div>
+    <div class="form-group">
+      <label>Precio ($)</label>
+      <input type="number" id="s-precio" placeholder="0.00" min="0" step="0.01">
+      <div class="form-error" id="err-s-precio">Precio inválido</div>
+    </div>
+    <div class="form-group">
+      <label>Cantidad inicial</label>
+      <input type="number" id="s-cantidad" placeholder="0" min="0">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sand" onclick="closeModal('modal-stock')">Cancelar</button>
+      <button class="btn btn-teal" onclick="addStock()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR CANTIDAD (popup inline, but also this modal for stock edit) -->
+<div class="modal-overlay" id="modal-edit-stock">
+  <div class="modal">
+    <h2>✏️ Editar ingrediente</h2>
+    <input type="hidden" id="edit-stock-id">
+    <div class="form-group">
+      <label>Nombre</label>
+      <input type="text" id="edit-s-nombre">
+      <div class="form-error" id="err-edit-s-nombre">Campo requerido</div>
+    </div>
+    <div class="form-group">
+      <label>Ubicación</label>
+      <input type="text" id="edit-s-ubicacion">
+      <div class="form-error" id="err-edit-s-ubicacion">Campo requerido</div>
+    </div>
+    <div class="form-group">
+      <label>Precio ($)</label>
+      <input type="number" id="edit-s-precio" min="0" step="0.01">
+      <div class="form-error" id="err-edit-s-precio">Precio inválido</div>
+    </div>
+    <div class="form-group">
+      <label>Cantidad</label>
+      <input type="number" id="edit-s-cantidad" min="0">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sand" onclick="closeModal('modal-edit-stock')">Cancelar</button>
+      <button class="btn btn-teal" onclick="saveEditStock()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRODUCTO (agregar/editar) -->
+<div class="modal-overlay" id="modal-producto">
+  <div class="modal" style="max-width:520px">
+    <h2 id="prod-modal-title">🍽️ Nuevo producto</h2>
+    <input type="hidden" id="prod-edit-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+      <div class="form-group">
+        <label>Emoji (Win + .)</label>
+        <input type="text" id="prod-emoji" placeholder="🍔" maxlength="4">
+        <div class="form-error" id="err-prod-emoji">Requerido</div>
+      </div>
+      <div class="form-group">
+        <label>Categoría</label>
+        <select id="prod-categoria">
+          <option value="comida">🍽️ Comida</option>
+          <option value="bebida">🥤 Bebida</option>
+          <option value="entrada">🥗 Entrada</option>
+          <option value="postre">🍫 Postre</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Nombre del producto</label>
+      <input type="text" id="prod-nombre" placeholder="Ej: Hamburguesa Vegana">
+      <div class="form-error" id="err-prod-nombre">Campo requerido</div>
+    </div>
+    <div class="form-group">
+      <label>Precio ($)</label>
+      <input type="number" id="prod-precio" placeholder="0.00" min="0" step="0.01">
+      <div class="form-error" id="err-prod-precio">Precio inválido</div>
+    </div>
+    <div class="form-group">
+      <label>Ingredientes</label>
+      <div class="ing-list" id="ing-list"></div>
+      <div class="ing-add-row">
+        <select id="ing-select">
+          <option value="">— Seleccionar ingrediente —</option>
+        </select>
+        <button class="btn btn-teal btn-sm" onclick="addIngToList()">+ Agregar</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sand" onclick="closeModal('modal-producto')">Cancelar</button>
+      <button class="btn btn-teal" onclick="saveProducto()">Guardar producto</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="shared.js"></script>
+<script>
+  let db = IFData.load();
+  let activeFilter = 'all';
+  let currentIngredientes = []; // for modal
+  let activeQtyPopup = null;
+
+  function getStatus(s) {
+    if ((s.cantidad||0) === 0) return 'Sin stock';
+    if ((s.cantidad||0) <= 5)  return 'Bajo stock';
+    return 'Disponible';
+  }
+
+  function renderKPIs() {
+    const total = db.stock.length;
+    const disp  = db.stock.filter(s => getStatus(s) === 'Disponible').length;
+    const bajo  = db.stock.filter(s => getStatus(s) === 'Bajo stock').length;
+    document.getElementById('stock-kpis').innerHTML = `
+      <div class="stat-card"><div class="label">Total</div><div class="value">${total}</div><div class="sub">ingredientes</div></div>
+      <div class="stat-card"><div class="label">Disponibles</div><div class="value">${disp}</div><div class="sub">en stock</div></div>
+      <div class="stat-card"><div class="label">Bajo stock</div><div class="value">${bajo}</div><div class="sub">requieren atención</div></div>
+    `;
+  }
+
+  function getFiltered() {
+    const q = document.getElementById('search').value.toLowerCase();
+    return db.stock.filter(s => {
+      const st = getStatus(s);
+      const matchFilter = activeFilter === 'all' || st === activeFilter;
+      const matchSearch = !q || s.nombre.toLowerCase().includes(q) || s.ubicacion.toLowerCase().includes(q);
+      return matchFilter && matchSearch;
+    });
+  }
+
+  function renderTable() {
+    const filtered = getFiltered();
+    const tbody = document.getElementById('stock-tbody');
+    document.getElementById('stock-count').textContent = filtered.length + ' de ' + db.stock.length;
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-light);font-style:italic">Sin resultados</td></tr>';
+      return;
+    }
+    tbody.innerHTML = filtered.map(s => {
+      const st = getStatus(s);
+      const bc = st === 'Disponible' ? 'badge-green' : st === 'Bajo stock' ? 'badge-yellow' : 'badge-red';
+      return `
+        <tr>
+          <td><strong>${s.nombre}</strong></td>
+          <td>${s.fecha || '—'}</td>
+          <td>${s.ubicacion}</td>
+          <td>$${s.precio.toFixed(2)}</td>
+          <td>
+            <div class="qty-wrap" id="qw-${s.id}">
+              <button class="edit-btn" onclick="toggleQtyPopup(${s.id}, event)">✎ ${s.cantidad ?? 0}</button>
+              <div class="qty-popup" id="qp-${s.id}">
+                <label>Nueva cantidad</label>
+                <div class="qty-popup-row">
+                  <input type="number" id="qpi-${s.id}" value="${s.cantidad??0}" min="0">
+                  <button class="qty-popup-btn" onclick="saveQty(${s.id})">OK</button>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge ${bc}">${st}</span></td>
+          <td style="display:flex;gap:5px">
+            <button class="edit-btn" onclick="openEditStock(${s.id})">✏️ Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmDeleteStock(${s.id})">✕</button>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  function toggleQtyPopup(id, e) {
+    e.stopPropagation();
+    const popup = document.getElementById('qp-' + id);
+    if (activeQtyPopup && activeQtyPopup !== popup) {
+      activeQtyPopup.style.display = 'none';
+    }
+    const showing = popup.style.display === 'block';
+    popup.style.display = showing ? 'none' : 'block';
+    activeQtyPopup = showing ? null : popup;
+    if (!showing) {
+      setTimeout(() => document.getElementById('qpi-' + id)?.focus(), 50);
+    }
+  }
+
+  function saveQty(id) {
+    const item = db.stock.find(s => s.id === id);
+    if (!item) return;
+    const val = parseInt(document.getElementById('qpi-' + id).value);
+    if (!isNaN(val) && val >= 0) {
+      item.cantidad = val;
+      IFData.save(db);
+      renderKPIs();
+      renderTable();
+      renderProductos();
+      showToast('Stock de "' + item.nombre + '" actualizado');
+    }
+    const popup = document.getElementById('qp-' + id);
+    if (popup) popup.style.display = 'none';
+    activeQtyPopup = null;
+  }
+
+  document.addEventListener('click', () => {
+    if (activeQtyPopup) { activeQtyPopup.style.display = 'none'; activeQtyPopup = null; }
+  });
+
+  function setFilter(f, btn) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable();
+  }
+
+  function applyFilter() { renderTable(); }
+
+  function openEditStock(id) {
+    const s = db.stock.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('edit-stock-id').value = id;
+    document.getElementById('edit-s-nombre').value = s.nombre;
+    document.getElementById('edit-s-ubicacion').value = s.ubicacion;
+    document.getElementById('edit-s-precio').value = s.precio;
+    document.getElementById('edit-s-cantidad').value = s.cantidad ?? 0;
+    openModal('modal-edit-stock');
+  }
+
+  function saveEditStock() {
+    const id = parseInt(document.getElementById('edit-stock-id').value);
+    const nombre    = document.getElementById('edit-s-nombre').value.trim();
+    const ubicacion = document.getElementById('edit-s-ubicacion').value.trim();
+    const precio    = parseFloat(document.getElementById('edit-s-precio').value);
+    const cantidad  = parseInt(document.getElementById('edit-s-cantidad').value);
+    let v = true;
+    const se = (eid, show) => { document.getElementById(eid).style.display = show ? 'block' : 'none'; };
+    se('err-edit-s-nombre',    !nombre);              if (!nombre)               v = false;
+    se('err-edit-s-ubicacion', !ubicacion);           if (!ubicacion)            v = false;
+    se('err-edit-s-precio',    isNaN(precio)||precio<0); if(isNaN(precio)||precio<0) v = false;
+    if (!v) return;
+    const item = db.stock.find(s => s.id === id);
+    if (!item) return;
+    item.nombre = nombre; item.ubicacion = ubicacion; item.precio = precio;
+    item.cantidad = isNaN(cantidad) ? 0 : cantidad;
+    IFData.save(db);
+    closeModal('modal-edit-stock');
+    renderKPIs(); renderTable(); renderProductos();
+    showToast('"' + nombre + '" actualizado ✅');
+  }
+
+  function confirmDeleteStock(id) {
+    const item = db.stock.find(s => s.id === id);
+    if (!item) return;
+    openConfirm('¿Eliminar ingrediente?', '¿Eliminar "' + item.nombre + '"? Esto puede afectar los productos que lo usan.', () => {
+      const idx = db.stock.findIndex(s => s.id === id);
+      db.stock.splice(idx, 1);
+      IFData.save(db);
+      renderKPIs(); renderTable(); renderProductos();
+      showToast('"' + item.nombre + '" eliminado', 'err');
+    });
+  }
+
+  function addStock() {
+    const nombre    = document.getElementById('s-nombre').value.trim();
+    const ubicacion = document.getElementById('s-ubicacion').value.trim();
+    const precio    = parseFloat(document.getElementById('s-precio').value);
+    const cantidad  = parseInt(document.getElementById('s-cantidad').value) || 0;
+    let v = true;
+    const se = (id, show) => { document.getElementById(id).style.display = show ? 'block' : 'none'; };
+    se('err-s-nombre',    !nombre);              if (!nombre)               v = false;
+    se('err-s-ubicacion', !ubicacion);           if (!ubicacion)            v = false;
+    se('err-s-precio',    isNaN(precio)||precio<0); if(isNaN(precio)||precio<0) v = false;
+    if (!v) return;
+    db.stock.push({ id: Date.now(), nombre, fecha: new Date().toLocaleDateString('es-AR'), ubicacion, precio, cantidad });
+    IFData.save(db);
+    closeModal('modal-stock');
+    renderKPIs(); renderTable(); renderProductos();
+    showToast('"' + nombre + '" agregado ✅');
+    ['s-nombre','s-ubicacion','s-precio','s-cantidad'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  // ── PRODUCTOS ─────────────────────────────────────────────────
+
+  const CATNAMES = { comida:'🍽️ Comida', bebida:'🥤 Bebida', entrada:'🥗 Entrada', postre:'🍫 Postre' };
+
+  function renderProductos() {
+    const grid = document.getElementById('prod-grid');
+    if (!db.productos || !db.productos.length) {
+      grid.innerHTML = '<p style="color:var(--text-light);font-style:italic">Sin productos. Agregá el primero.</p>';
+      return;
+    }
+    // Sort by category
+    const cats = ['comida','bebida','entrada','postre'];
+    let html = '';
+    cats.forEach(cat => {
+      const prods = db.productos.filter(p => p.categoria === cat);
+      if (!prods.length) return;
+      html += `<div class="prod-card" style="grid-column:1/-1;background:var(--brown);color:var(--white);padding:0.6rem 1rem;display:flex;align-items:center;gap:8px;border-radius:var(--radius-sm)">
+        <strong style="font-family:'Playfair Display',serif;font-size:1rem;">${CATNAMES[cat] || cat}</strong>
+        <span style="font-size:0.75rem;opacity:0.7">${prods.length} producto(s)</span>
+      </div>`;
+      prods.forEach(p => {
+        const ings = (p.ingredientes || []).join(', ') || '—';
+        html += `
+          <div class="prod-card">
+            <div class="pc-emoji">${p.emoji}</div>
+            <div class="pc-name">${p.nombre}</div>
+            <div class="pc-price">$${p.precio.toFixed(2)}</div>
+            <div class="pc-cat">${CATNAMES[p.categoria] || p.categoria}</div>
+            <div class="ing-tags">${(p.ingredientes||[]).map(i=>'<span class="ing-tag">'+i+'</span>').join('')||'<span class="ing-tag" style="opacity:0.5">Sin ing.</span>'}</div>
+            <div class="pc-actions" style="margin-top:10px">
+              <button class="edit-btn" onclick="openEditProducto(${p.id})">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="confirmDeleteProducto(${p.id})">✕</button>
+            </div>
+          </div>`;
+      });
+    });
+    grid.innerHTML = html;
+  }
+
+  function buildIngSelect() {
+    const sel = document.getElementById('ing-select');
+    sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+      db.stock.map(s => `<option value="${s.nombre}">${s.nombre}</option>`).join('');
+  }
+
+  function renderIngList() {
+    document.getElementById('ing-list').innerHTML = currentIngredientes.map((ing, i) => `
+      <div class="ing-item">
+        <span>${ing}</span>
+        <button class="ing-remove" onclick="removeIng(${i})">✕</button>
+      </div>`).join('') || '<p style="font-size:0.78rem;color:var(--text-light);font-style:italic">Sin ingredientes asignados</p>';
+  }
+
+  function removeIng(i) { currentIngredientes.splice(i, 1); renderIngList(); }
+
+  function addIngToList() {
+    const val = document.getElementById('ing-select').value;
+    if (!val) return;
+    if (!currentIngredientes.includes(val)) {
+      currentIngredientes.push(val);
+      renderIngList();
+    }
+    document.getElementById('ing-select').value = '';
+  }
+
+  function openAddProducto() {
+    document.getElementById('prod-modal-title').textContent = '🍽️ Nuevo producto';
+    document.getElementById('prod-edit-id').value = '';
+    document.getElementById('prod-emoji').value = '';
+    document.getElementById('prod-nombre').value = '';
+    document.getElementById('prod-precio').value = '';
+    document.getElementById('prod-categoria').value = 'comida';
+    currentIngredientes = [];
+    buildIngSelect();
+    renderIngList();
+    openModal('modal-producto');
+  }
+
+  function openEditProducto(id) {
+    const p = db.productos.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('prod-modal-title').textContent = '✏️ Editar producto';
+    document.getElementById('prod-edit-id').value = id;
+    document.getElementById('prod-emoji').value = p.emoji;
+    document.getElementById('prod-nombre').value = p.nombre;
+    document.getElementById('prod-precio').value = p.precio;
+    document.getElementById('prod-categoria').value = p.categoria || 'comida';
+    currentIngredientes = [...(p.ingredientes || [])];
+    buildIngSelect();
+    renderIngList();
+    openModal('modal-producto');
+  }
+
+  function saveProducto() {
+    const emoji     = document.getElementById('prod-emoji').value.trim();
+    const nombre    = document.getElementById('prod-nombre').value.trim();
+    const precio    = parseFloat(document.getElementById('prod-precio').value);
+    const categoria = document.getElementById('prod-categoria').value;
+    const editId    = document.getElementById('prod-edit-id').value;
+    let v = true;
+    const se = (id, show) => { document.getElementById(id).style.display = show ? 'block' : 'none'; };
+    se('err-prod-emoji',   !emoji);             if (!emoji)             v = false;
+    se('err-prod-nombre',  !nombre);            if (!nombre)            v = false;
+    se('err-prod-precio',  isNaN(precio)||precio<0); if(isNaN(precio)||precio<0) v = false;
+    if (!v) return;
+
+    const newIng = [...currentIngredientes];
+
+    if (editId) {
+      const p = db.productos.find(x => x.id === parseInt(editId));
+      if (p) {
+        p.emoji = emoji; p.nombre = nombre; p.precio = precio;
+        p.categoria = categoria; p.ingredientes = newIng;
+        // Update ingredientes map
+        db.ingredientes[p.id] = newIng.map(n => ({ nombre: n, cantidad: 1 }));
+      }
+    } else {
+      const newId = Date.now();
+      db.productos.push({ id: newId, nombre, precio, emoji, categoria, ingredientes: newIng });
+      db.ingredientes[newId] = newIng.map(n => ({ nombre: n, cantidad: 1 }));
+    }
+
+    IFData.save(db);
+    closeModal('modal-producto');
+    renderProductos();
+    showToast('"' + nombre + '" guardado ✅');
+  }
+
+  function confirmDeleteProducto(id) {
+    const p = db.productos.find(x => x.id === id);
+    if (!p) return;
+    openConfirm('¿Eliminar producto?', '¿Eliminar "' + p.nombre + '"? También se eliminará de ventas si existe.', () => {
+      db.productos = db.productos.filter(x => x.id !== id);
+      delete db.ingredientes[id];
+      IFData.save(db);
+      renderProductos();
+      showToast('"' + p.nombre + '" eliminado', 'err');
+    });
+  }
+
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  });
+
+  renderKPIs();
+  renderTable();
+  renderProductos();
+</script>
+</body>
+</html>

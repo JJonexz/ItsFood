@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Its Food – Empleados</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  .emp-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .emp-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: var(--white);
+    font-weight: 900; font-size: 0.9rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-right: 8px; flex-shrink: 0;
+  }
+  .name-cell { display: flex; align-items: center; }
+  .puesto-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    background: rgba(61,122,122,0.15);
+    color: var(--teal-dark);
+  }
+  @media (max-width: 700px) { .emp-kpis { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="caja.html">
+    <div class="logo-heart">🌿</div>
+    <span class="logo-name">Its Food</span>
+  </a>
+  <a class="logo" href="index.html">
+    <div class="header-right"><span href="index.html" class="menu-label">Menu</span></div>
+  </a>
+</header>
+
+<div class="page-layout">
+  <nav class="sidebar">
+    <a href="caja.html"><span class="nav-dot"></span>Caja</a>
+    <a href="pedidos.html"><span class="nav-dot"></span>Pedidos</a>
+    <a href="ventas.html"><span class="nav-dot"></span>Ventas</a>
+    <a href="stock.html"><span class="nav-dot"></span>Stock</a>
+    <a href="empleados.html" class="active"><span class="nav-dot"></span>Empleados</a>
+  </nav>
+
+  <div class="content">
+    <div class="page-title fade-up">Empleados</div>
+    <div class="emp-kpis fade-up" id="emp-kpis"></div>
+
+    <div style="display:flex;justify-content:flex-end;margin-bottom:1rem" class="fade-up">
+      <button class="btn btn-teal" onclick="openModal('modal-emp')">+ Agregar empleado</button>
+    </div>
+
+    <div class="table-box fade-up">
+      <div class="table-box-header">
+        <span>Equipo Its Food</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>DNI</th>
+            <th>Teléfono</th>
+            <th>Puesto</th>
+            <th>Horas/sem</th>
+            <th>Sueldo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="emp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand"><strong>🌿 Its Food</strong><p>Lo más natural y saludable</p></div>
+    <div class="footer-col"><h4>Localidad</h4><p>Av. Verde 1420<br>Buenos Aires, AR</p></div>
+    <div class="footer-col"><h4>Contacto</h4><p>+54 11 4567-8910<br>hola@itsfood.com.ar</p></div>
+    <div class="footer-col"><h4>Horarios</h4><p>Lun–Vie: 8:00–22:00<br>Sáb–Dom: 9:00–21:00</p></div>
+  </div>
+  <div class="footer-bottom">@2026 Its Food</div>
+</footer>
+
+<!-- MODAL AGREGAR -->
+<div class="modal-overlay" id="modal-emp">
+  <div class="modal">
+    <h2>👤 Nuevo empleado</h2>
+    <div class="form-group">
+      <label>Nombre completo</label>
+      <input type="text" id="e-nombre" placeholder="Ej: María García">
+      <div class="form-error" id="err-e-nombre">Campo requerido</div>
+    </div>
+    <div class="form-group">
+      <label>DNI</label>
+      <input type="text" id="e-dni" placeholder="Ej: 30456789" maxlength="8">
+      <div class="form-error" id="err-e-dni">DNI inválido (7-8 dígitos)</div>
+    </div>
+    <div class="form-group">
+      <label>Teléfono</label>
+      <input type="text" id="e-tel" placeholder="Ej: 011-4567-8910">
+      <div class="form-error" id="err-e-tel">Campo requerido</div>
+    </div>
+    <div class="form-group">
+      <label>Puesto</label>
+      <input type="text" id="e-puesto" placeholder="Ej: Cajera, Cocinero, Mozo…">
+      <div class="form-error" id="err-e-puesto">Campo requerido</div>
+    </div>
+    <div class="form-group">
+      <label>Horas semanales</label>
+      <input type="number" id="e-horas" placeholder="Ej: 40" min="0" max="80">
+      <div class="form-error" id="err-e-horas">Valor inválido</div>
+    </div>
+    <div class="form-group">
+      <label>Sueldo ($)</label>
+      <input type="number" id="e-sueldo" placeholder="0.00" min="0">
+      <div class="form-error" id="err-e-sueldo">Sueldo inválido</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sand" onclick="closeModal('modal-emp')">Cancelar</button>
+      <button class="btn btn-teal" onclick="addEmpleado()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div class="modal-overlay" id="modal-edit-emp">
+  <div class="modal">
+    <h2>✏️ Editar empleado</h2>
+    <input type="hidden" id="edit-idx">
+    <div class="form-group">
+      <label>Nombre completo</label>
+      <input type="text" id="edit-nombre" placeholder="Ej: María García">
+      <div class="form-error" id="err-edit-nombre">Campo requerido</div>
+    </div>
+    <div class="form-group">
+      <label>DNI</label>
+      <input type="text" id="edit-dni" placeholder="Ej: 30456789" maxlength="8">
+      <div class="form-error" id="err-edit-dni">DNI inválido (7-8 dígitos)</div>
+    </div>
+    <div class="form-group">
+      <label>Teléfono</label>
+      <input type="text" id="edit-tel" placeholder="Ej: 011-4567-8910">
+      <div class="form-error" id="err-edit-tel">Campo requerido</div>
+    </div>
+    <div class="form-group">
+      <label>Puesto</label>
+      <input type="text" id="edit-puesto" placeholder="Ej: Cajera, Cocinero, Mozo…">
+      <div class="form-error" id="err-edit-puesto">Campo requerido</div>
+    </div>
+    <div class="form-group">
+      <label>Horas semanales</label>
+      <input type="number" id="edit-horas" placeholder="Ej: 40" min="0" max="80">
+      <div class="form-error" id="err-edit-horas">Valor inválido</div>
+    </div>
+    <div class="form-group">
+      <label>Sueldo ($)</label>
+      <input type="number" id="edit-sueldo" placeholder="0.00" min="0">
+      <div class="form-error" id="err-edit-sueldo">Sueldo inválido</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sand" onclick="closeModal('modal-edit-emp')">Cancelar</button>
+      <button class="btn btn-teal" onclick="saveEditEmpleado()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+<script src="shared.js"></script>
+<script>
+  let db = IFData.load();
+
+  function renderKPIs() {
+    const total    = db.empleados.length;
+    const nomina   = db.empleados.reduce((s, e) => s + e.sueldo, 0);
+    const promedio = total ? (nomina / total).toFixed(0) : 0;
+    const horasProm = total ? (db.empleados.reduce((s,e)=>s+(e.horas||0),0)/total).toFixed(0) : 0;
+    document.getElementById('emp-kpis').innerHTML = `
+      <div class="stat-card"><div class="label">Equipo</div><div class="value">${total}</div><div class="sub">empleados activos</div></div>
+      <div class="stat-card"><div class="label">Nómina total</div><div class="value">$${nomina}</div><div class="sub">mensual</div></div>
+      <div class="stat-card"><div class="label">Sueldo promedio</div><div class="value">$${promedio}</div><div class="sub">por empleado</div></div>
+      <div class="stat-card"><div class="label">Horas prom/sem</div><div class="value">${horasProm}h</div><div class="sub">por empleado</div></div>
+    `;
+  }
+
+  function initials(name) {
+    return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  function renderTable() {
+    document.getElementById('emp-tbody').innerHTML = db.empleados.map((e, i) => `
+      <tr>
+        <td>
+          <div class="name-cell">
+            <div class="emp-avatar">${initials(e.nombre)}</div>
+            <strong>${e.nombre}</strong>
+          </div>
+        </td>
+        <td>${e.dni}</td>
+        <td>${e.telefono}</td>
+        <td><span class="puesto-badge">${e.puesto || '—'}</span></td>
+        <td>${e.horas ? e.horas + 'h' : '—'}</td>
+        <td><strong>$${e.sueldo}</strong></td>
+        <td style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-teal btn-sm" onclick="openEditEmp(${i})">✏️ Editar</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmDeleteEmp(${i})">✕ Eliminar</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function openEditEmp(i) {
+    const e = db.empleados[i];
+    document.getElementById('edit-idx').value = i;
+    document.getElementById('edit-nombre').value = e.nombre;
+    document.getElementById('edit-dni').value = e.dni;
+    document.getElementById('edit-tel').value = e.telefono;
+    document.getElementById('edit-puesto').value = e.puesto || '';
+    document.getElementById('edit-horas').value = e.horas || '';
+    document.getElementById('edit-sueldo').value = e.sueldo;
+    openModal('modal-edit-emp');
+  }
+
+  function saveEditEmpleado() {
+    const i      = parseInt(document.getElementById('edit-idx').value);
+    const nombre = document.getElementById('edit-nombre').value.trim();
+    const dni    = document.getElementById('edit-dni').value.trim();
+    const tel    = document.getElementById('edit-tel').value.trim();
+    const puesto = document.getElementById('edit-puesto').value.trim();
+    const horas  = parseInt(document.getElementById('edit-horas').value);
+    const sueldo = parseFloat(document.getElementById('edit-sueldo').value);
+    let v = true;
+    const se = (id, show) => { document.getElementById(id).style.display = show ? 'block' : 'none'; };
+    se('err-edit-nombre', !nombre);                         if (!nombre)                 v = false;
+    se('err-edit-dni',    !/^\d{7,8}$/.test(dni));          if (!/^\d{7,8}$/.test(dni)) v = false;
+    se('err-edit-tel',    !tel);                             if (!tel)                   v = false;
+    se('err-edit-puesto', !puesto);                          if (!puesto)                v = false;
+    se('err-edit-horas',  isNaN(horas)||horas<0);            if (isNaN(horas)||horas<0) v = false;
+    se('err-edit-sueldo', isNaN(sueldo)||sueldo<0);          if(isNaN(sueldo)||sueldo<0) v = false;
+    if (!v) return;
+    db.empleados[i] = { nombre, dni, telefono: tel, puesto, horas, sueldo };
+    IFData.save(db);
+    closeModal('modal-edit-emp');
+    renderKPIs();
+    renderTable();
+    showToast('"' + nombre + '" actualizado ✅');
+  }
+
+  function confirmDeleteEmp(i) {
+    const name = db.empleados[i].nombre;
+    openConfirm('¿Eliminar empleado?', '¿Estás seguro de que querés eliminar a "' + name + '"? Esta acción no se puede deshacer.', () => {
+      db.empleados.splice(i, 1);
+      IFData.save(db);
+      renderKPIs();
+      renderTable();
+      showToast('"' + name + '" eliminado', 'err');
+    });
+  }
+
+  function addEmpleado() {
+    const nombre = document.getElementById('e-nombre').value.trim();
+    const dni    = document.getElementById('e-dni').value.trim();
+    const tel    = document.getElementById('e-tel').value.trim();
+    const puesto = document.getElementById('e-puesto').value.trim();
+    const horas  = parseInt(document.getElementById('e-horas').value);
+    const sueldo = parseFloat(document.getElementById('e-sueldo').value);
+    let v = true;
+    const se = (id, show) => { document.getElementById(id).style.display = show ? 'block' : 'none'; };
+    se('err-e-nombre', !nombre);                         if (!nombre)                 v = false;
+    se('err-e-dni',    !/^\d{7,8}$/.test(dni));          if (!/^\d{7,8}$/.test(dni)) v = false;
+    se('err-e-tel',    !tel);                             if (!tel)                   v = false;
+    se('err-e-puesto', !puesto);                          if (!puesto)                v = false;
+    se('err-e-horas',  isNaN(horas)||horas<0);            if (isNaN(horas)||horas<0) v = false;
+    se('err-e-sueldo', isNaN(sueldo)||sueldo<0);          if(isNaN(sueldo)||sueldo<0) v = false;
+    if (!v) return;
+    db.empleados.push({ nombre, dni, telefono: tel, puesto, horas, sueldo });
+    IFData.save(db);
+    closeModal('modal-emp');
+    renderKPIs();
+    renderTable();
+    showToast('"' + nombre + '" agregado ✅');
+    ['e-nombre','e-dni','e-tel','e-puesto','e-horas','e-sueldo'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  });
+
+  renderKPIs();
+  renderTable();
+</script>
+</body>
+</html>

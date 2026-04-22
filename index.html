@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Its Food – Lo más natural y saludable</title>
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    /* ── Modal admin ─────────────────────────────────────── */
+    .admin-overlay {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    .admin-overlay.open { opacity: 1; pointer-events: all; }
+
+    .admin-modal {
+      background: #faf7f2; border-radius: 18px;
+      padding: 2rem 2.2rem; width: 340px; max-width: 92vw;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      transform: translateY(24px); transition: transform .28s;
+      position: relative; text-align: center;
+    }
+    .admin-overlay.open .admin-modal { transform: translateY(0); }
+
+    .admin-modal h2 { font-size: 1.3rem; font-weight: 900; margin-bottom: .25rem; color: #2e2e2e; }
+    .admin-sub { font-size: .82rem; color: #888; margin-bottom: 1.4rem; }
+
+    .admin-input {
+      width: 100%; padding: .6rem .85rem;
+      border: 2.5px solid #ddd; border-radius: 10px;
+      font-size: 1rem; font-family: inherit;
+      background: #fff; outline: none; transition: border-color .2s;
+      box-sizing: border-box; margin-bottom: .85rem;
+    }
+    .admin-input:focus { border-color: #5a9e9e; }
+
+    .admin-btn-row { display: flex; gap: .6rem; }
+    .admin-btn {
+      flex: 1; padding: .65rem; border-radius: 10px;
+      font-family: inherit; font-weight: 800; font-size: .9rem;
+      cursor: pointer; border: none; transition: .2s;
+    }
+    .admin-btn-primary  { background: #5a9e9e; color: #fff; }
+    .admin-btn-primary:hover  { background: #3d7a7a; }
+    .admin-btn-secondary { background: #eee; color: #555; }
+    .admin-btn-secondary:hover { background: #ddd; }
+
+    .admin-modal-close {
+      position: absolute; top: .85rem; right: 1rem;
+      background: none; border: none; font-size: 1.2rem;
+      cursor: pointer; color: #aaa; line-height: 1;
+    }
+    .admin-modal-close:hover { color: #555; }
+
+    .admin-error {
+      color: #c03030; font-size: .8rem; font-weight: 700;
+      margin: -.5rem 0 .75rem; display: none;
+    }
+    .admin-success {
+      color: #2e7d32; font-size: .8rem; font-weight: 700;
+      margin-top: .4rem; display: none;
+    }
+
+    .admin-change-section {
+      border-top: 2px dashed #ddd; margin-top: 1.2rem;
+      padding-top: 1rem; display: none; text-align: left;
+    }
+    .admin-change-section.open { display: block; }
+    .admin-change-label {
+      font-size: .72rem; font-weight: 900; text-transform: uppercase;
+      letter-spacing: 1px; color: #555; margin-bottom: .5rem; display: block;
+    }
+    .admin-change-link {
+      display: inline-block; margin-top: .6rem;
+      font-size: .78rem; font-weight: 700; color: #5a9e9e;
+      cursor: pointer; background: none; border: none;
+      padding: 0; text-decoration: underline; font-family: inherit;
+    }
+    .admin-change-link:hover { color: #3d7a7a; }
+
+    /* ── Cards ───────────────────────────────────────────── */
+    .card-img-wrap { position: relative; }
+
+    .badge-featured {
+      position: absolute; top: 8px; right: 8px;
+      background: #e8a020; color: #fff;
+      font-size: .62rem; font-weight: 900;
+      padding: 3px 8px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: .5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.18);
+      pointer-events: none;
+    }
+
+    .card-price-inline {
+      display: block; margin-top: .25rem;
+      font-weight: 900; font-size: .95rem; color: #3d7a7a;
+    }
+
+    /* Sin stock: NO bloquea interacción en index, solo aviso visual */
+    .card.no-stock-card .card-img-wrap::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.18);
+      border-radius: 8px;
+      pointer-events: none;
+    }
+
+    /* Badge sin stock en la card */
+    .no-stock-badge {
+      display: inline-block;
+      margin-top: .35rem;
+      background: rgba(192,48,48,0.1);
+      color: #c03030;
+      font-size: .72rem;
+      font-weight: 900;
+      padding: 2px 10px;
+      border-radius: 20px;
+      letter-spacing: .3px;
+    }
+
+    /* ── Carrusel product cards ───────────────────────────── */
+    .carousel-product-card {
+      background: rgba(255,255,255,0.18);
+      backdrop-filter: blur(8px);
+      border: 2px solid rgba(255,255,255,0.35);
+      border-radius: 16px;
+      padding: .85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      width: 110px;
+      flex-shrink: 0;
+      text-align: center;
+      position: relative;
+    }
+    .carousel-product-card .cp-emoji { font-size: 1.9rem; }
+    .carousel-product-card .cp-name {
+      font-weight: 900; font-size: .75rem;
+      color: #fff; line-height: 1.2;
+    }
+    .carousel-product-card .cp-price {
+      font-weight: 900; font-size: .9rem;
+      color: rgba(255,255,255,0.9);
+    }
+    .carousel-product-card .cp-badge {
+      background: #e8a020; color: #fff;
+      font-size: .54rem; font-weight: 900;
+      padding: 2px 7px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: .5px;
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,.22);
+    }
+    .carousel-product-card .cp-nostk {
+      color: #ff9090; font-size: .68rem; font-weight: 800;
+    }
+
+    /* slide layout: flex row de cards */
+    .carousel-slide {
+      display: flex !important;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    /* ── Categorías del menú ─────────────────────────────── */
+    .menu-cat-section { margin-bottom: 3.5rem; }
+    .menu-cat-header {
+      display: flex; align-items: center; gap: 14px;
+      font-size: 2rem; font-weight: 900;
+      color: #3d7a7a; margin-bottom: 2.2rem;
+      padding: 24px 0;
+      border-top: 3px solid rgba(90,158,158,0.3);
+      text-transform: uppercase; letter-spacing: 2px;
+    }
+    .menu-cat-section:nth-child(odd) .menu-cat-header { justify-content: flex-start; padding-left: 480px; }
+    .menu-cat-section:nth-child(even) .menu-cat-header { justify-content: flex-end; padding-right: 480px; }
+  </style>
+</head>
+<body>
+
+  <!-- ── HERO ─────────────────────────────────────────── -->
+  <header class="hero">
+    <h1 class="hero-brand">Its Food</h1>
+    <p class="hero-tagline">Lo más natural y saludable</p>
+
+    <div class="carousel-wrapper">
+      <button class="carousel-btn carousel-btn--prev" onclick="carousel.prev()" aria-label="Anterior">&#8249;</button>
+
+      <div class="carousel-viewport">
+        <div class="carousel-track" id="carouselTrack">
+          <!-- Slides se generan dinámicamente -->
+        </div>
+      </div>
+
+      <button class="carousel-btn carousel-btn--next" onclick="carousel.next()" aria-label="Siguiente">&#8250;</button>
+    </div>
+
+    <div class="carousel-dots" id="carouselDots"></div>
+
+    <p class="hero-desc">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio.
+      Praesent libero. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+      Integer nec odio. Praesent libero. Lorem ipsum dolor sit amet, consectetur
+      adipiscing elit. Integer nec odio. Praesent.
+    </p>
+
+    <div id="heroSentinel"></div>
+  </header>
+
+  <div class="sticky-header" id="stickyHeader">
+    <div class="sticky-header-inner">
+      <div class="sticky-logo-icon">
+        <svg width="30" height="30" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21 36s-15-9.5-15-19A9 9 0 0 1 21 12a9 9 0 0 1 15 5c0 9.5-15 19-15 19z"
+            fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"/>
+          <path d="M21 18c0 0-4 4-4 7s4 7 4 7 4-3 4-7-4-7-4-7z" fill="rgba(139,195,74,0.9)"/>
+          <line x1="21" y1="18" x2="21" y2="32" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+        </svg>
+      </div>
+      <span class="sticky-logo-name">Its Food</span>
+    </div>
+  </div>
+
+  <!-- ── MENU ──────────────────────────────────────────── -->
+  <section class="menu-section" id="menuSection">
+    <p class="menu-subtitle">Lo más natural en nuestro</p>
+    <div class="menu-title-wrapper">
+      <span class="fork-icon">&#127860;</span>
+      <h2 class="menu-title">Menú</h2>
+      <span class="fork-icon" style="transform:scaleX(-1)">&#127860;</span>
+    </div>
+
+    <div id="menuSections"></div>
+  </section>
+
+  <!-- ── MODAL DE PRODUCTO ──────────────────────────────── -->
+  <div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="modal-close" onclick="closeModal()" aria-label="Cerrar">&#10005;</button>
+
+      <div class="modal-header">
+        <div class="modal-header-heart">&#9829;</div>
+        <span class="modal-header-title">Its Food</span>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-img-col">
+          <!-- Reemplazamos el badge vegan por el emoji de producto -->
+          <div class="modal-product-icon" id="modalEmoji" style="font-size:3.5rem;text-align:center;padding:1rem 0;">🌿</div>
+          <div class="modal-price" id="modalPrice">$0.00</div>
+          <div id="modalNoStockMsg" style="display:none;color:#c03030;font-weight:900;font-size:.8rem;margin-top:.4rem;text-align:center;">⚠️ Sin stock disponible</div>
+        </div>
+        <div class="modal-info-col">
+          <h3 class="modal-dish-name" id="modalName">-</h3>
+          <p class="modal-dish-desc" id="modalDesc">-</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MODAL ADMIN ───────────────────────────────────── -->
+  <div class="admin-overlay" id="adminOverlay" onclick="handleAdminOverlayClick(event)">
+    <div class="admin-modal" role="dialog" aria-modal="true">
+      <button class="admin-modal-close" onclick="closeAdminModal()" aria-label="Cerrar">&#10005;</button>
+
+      <h2>&#128272; Administración</h2>
+      <p class="admin-sub">Ingresá la contraseña para continuar</p>
+
+      <input class="admin-input" type="password" id="adminPassInput"
+        placeholder="Contraseña"
+        onkeydown="if(event.key==='Enter') submitAdminPass()" />
+      <p class="admin-error" id="adminError">Contraseña incorrecta</p>
+
+      <div class="admin-btn-row">
+        <button class="admin-btn admin-btn-secondary" onclick="closeAdminModal()">Cancelar</button>
+        <button class="admin-btn admin-btn-primary"   onclick="submitAdminPass()">Ingresar</button>
+      </div>
+
+      <button class="admin-change-link" onclick="toggleChangeSection()">&#191;Cambiar contraseña?</button>
+
+      <div class="admin-change-section" id="adminChangeSection">
+        <label class="admin-change-label">Contraseña actual</label>
+        <input class="admin-input" type="password" id="changeCurrentPass" placeholder="Actual" />
+        <label class="admin-change-label">Nueva contraseña</label>
+        <input class="admin-input" type="password" id="changeNewPass" placeholder="Nueva" />
+        <label class="admin-change-label">Confirmar nueva</label>
+        <input class="admin-input" type="password" id="changeConfirmPass" placeholder="Confirmar"
+          onkeydown="if(event.key==='Enter') changeAdminPass()" />
+        <p class="admin-error"   id="changeError">-</p>
+        <p class="admin-success" id="changeSuccess">Contrasena actualizada</p>
+        <div class="admin-btn-row" style="margin-top:.5rem">
+          <button class="admin-btn admin-btn-secondary" onclick="toggleChangeSection()">Cancelar</button>
+          <button class="admin-btn admin-btn-primary"   onclick="changeAdminPass()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER ─────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="footer-content">
+
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="footer-logo-icon">
+            <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 36s-15-9.5-15-19A9 9 0 0 1 21 12a9 9 0 0 1 15 5c0 9.5-15 19-15 19z"
+                fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+              <rect x="13" y="7" width="16" height="8" rx="4" fill="rgba(139,195,74,0.9)"/>
+              <text x="21" y="13.5" text-anchor="middle" fill="white"
+                style="font-size:5px;font-weight:900;font-family:Nunito,sans-serif">VEGAN</text>
+              <path d="M21 18c0 0-4 3-4 7s4 7 4 7 4-3 4-7-4-7-4-7z" fill="rgba(139,195,74,0.85)"/>
+              <line x1="21" y1="18" x2="21" y2="32" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+            </svg>
+          </div>
+          <span class="footer-logo-name">Its Food</span>
+        </div>
+        <p class="footer-desc">
+          Somos un restaurante de comida vegana comprometido con ingredientes naturales,
+          frescos y de temporada. Cada plato está pensado para cuidar tu salud sin resignar el sabor.
+        </p>
+      </div>
+
+      <div class="footer-info">
+        <div class="footer-col-title">Información</div>
+        <ul class="footer-list">
+          <li>&#128205; Localidad: Buenos Aires, Argentina</li>
+          <li>&#128222; Número: +54 11 3344-5566</li>
+          <li>&#9993;&#65039; Mail: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0c65787f6a6363684c69616d6560226f6361">[email&#160;protected]</a></li>
+          <li>&#128336; Horarios: Lun-Vie 12:00-22:00 · Sáb-Dom 13:00-23:00</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
+      <span class="footer-copy">© 2026 Its Food</span>
+      <button class="footer-admin-btn" onclick="openAdminModal()">&#128274; Acceso Administración</button>
+    </div>
+  </footer>
+
+  <!-- ── WHATSAPP ───────────────────────────────────────── -->
+  <a class="wa-float" href="https://wa.me/+541100000000" target="_blank" rel="noopener" aria-label="Contactar por WhatsApp">
+    <svg class="wa-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="#fff">
+      <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232"/>
+    </svg>
+    <span class="wa-tooltip">Escribenos</span>
+    <span class="wa-pulse"></span>
+  </a>
+
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="shared.js"></script>
+  <script>
+  /* ============================================================
+     ADMIN
+     Clave localStorage: IFFood_adminPass  |  Default: admin123
+  ============================================================ */
+  var ADMIN_PASS_KEY = 'IFFood_adminPass';
+  var DEFAULT_PASS   = 'admin123';
+
+  function getAdminPass() {
+    return localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_PASS;
+  }
+
+  function openAdminModal() {
+    document.getElementById('adminPassInput').value = '';
+    document.getElementById('adminError').style.display = 'none';
+    document.getElementById('adminOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(function() { document.getElementById('adminPassInput').focus(); }, 260);
+  }
+
+  function closeAdminModal() {
+    document.getElementById('adminOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+    var sec = document.getElementById('adminChangeSection');
+    if (sec.classList.contains('open')) toggleChangeSection();
+  }
+
+  function handleAdminOverlayClick(e) {
+    if (e.target === document.getElementById('adminOverlay')) closeAdminModal();
+  }
+
+  function submitAdminPass() {
+    var val   = document.getElementById('adminPassInput').value;
+    var errEl = document.getElementById('adminError');
+    if (val === getAdminPass()) {
+      closeAdminModal();
+      window.location.href = 'caja.html';
+    } else {
+      errEl.style.display = 'block';
+      document.getElementById('adminPassInput').value = '';
+      document.getElementById('adminPassInput').focus();
+      var m = document.querySelector('.admin-modal');
+      m.style.transition = 'none';
+      m.style.transform  = 'translateY(0) translateX(-8px)';
+      setTimeout(function() { m.style.transform = 'translateY(0) translateX(8px)'; }, 80);
+      setTimeout(function() { m.style.transform = 'translateY(0) translateX(-4px)'; }, 160);
+      setTimeout(function() { m.style.transition = ''; m.style.transform = 'translateY(0)'; }, 240);
+    }
+  }
+
+  function toggleChangeSection() {
+    var sec = document.getElementById('adminChangeSection');
+    sec.classList.toggle('open');
+    ['changeCurrentPass','changeNewPass','changeConfirmPass'].forEach(function(id) {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('changeError').style.display   = 'none';
+    document.getElementById('changeSuccess').style.display = 'none';
+  }
+
+  function changeAdminPass() {
+    var current = document.getElementById('changeCurrentPass').value;
+    var newPass  = document.getElementById('changeNewPass').value.trim();
+    var confirm  = document.getElementById('changeConfirmPass').value.trim();
+    var errEl    = document.getElementById('changeError');
+    var okEl     = document.getElementById('changeSuccess');
+
+    errEl.style.display = okEl.style.display = 'none';
+
+    if (current !== getAdminPass()) {
+      errEl.textContent = 'La contrasena actual es incorrecta';
+      errEl.style.display = 'block'; return;
+    }
+    if (!newPass || newPass.length < 4) {
+      errEl.textContent = 'La nueva contrasena debe tener al menos 4 caracteres';
+      errEl.style.display = 'block'; return;
+    }
+    if (newPass !== confirm) {
+      errEl.textContent = 'Las contrasenas no coinciden';
+      errEl.style.display = 'block'; return;
+    }
+
+    localStorage.setItem(ADMIN_PASS_KEY, newPass);
+    okEl.style.display = 'block';
+    ['changeCurrentPass','changeNewPass','changeConfirmPass'].forEach(function(id) {
+      document.getElementById(id).value = '';
+    });
+    setTimeout(function() { okEl.style.display = 'none'; toggleChangeSection(); }, 2000);
+  }
+
+
+  /* ============================================================
+     MODAL DE PRODUCTO
+     Siempre se puede abrir, incluso con sin stock
+  ============================================================ */
+  function openModal(name, desc, price, emoji, noStock) {
+    document.getElementById('modalName').textContent  = name;
+    document.getElementById('modalDesc').textContent  = desc;
+    document.getElementById('modalPrice').textContent = price;
+    document.getElementById('modalEmoji').textContent = emoji || '🌿';
+    var noStockEl = document.getElementById('modalNoStockMsg');
+    if (noStockEl) noStockEl.style.display = noStock ? 'block' : 'none';
+    document.getElementById('modalOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeAdminModal(); closeModal(); }
+  });
+
+
+  /* ============================================================
+     HELPERS
+  ============================================================ */
+  function safeAttr(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function getStockMax(id, stock, ingredientes) {
+    try {
+      if (typeof IFData !== 'undefined' && IFData.getMaxStock)
+        return IFData.getMaxStock(id, stock, ingredientes);
+    } catch(e) {}
+    return 99;
+  }
+
+
+  /* ============================================================
+     CARDS DEL MENU
+     - Primeros 2 productos: "Más vendido"
+     - Sin stock: aviso rojo pero SIEMPRE clickeable (abre modal)
+     - Iconos: emoji del producto en lugar de badge vegan
+  ============================================================ */
+  function buildCard(nombre, desc, price, noStock, featured, emoji) {
+    var shortDesc  = desc.length > 80 ? desc.slice(0, 77) + '...' : desc;
+    var featHTML   = featured ? '<span class="badge-featured">⭐ Más vendido</span>' : '';
+    var safeEmoji  = emoji || '🌿';
+    var sn = safeAttr(nombre), sd = safeAttr(desc), sp = safeAttr(price);
+    var se = safeAttr(safeEmoji);
+    var ns = noStock ? 'true' : 'false';
+
+    // Sin stock: clase visual PERO sin pointer-events:none (siempre clickeable)
+    var noStockCls = noStock ? ' no-stock-card' : '';
+    var noStockBadge = noStock
+      ? '<span class="no-stock-badge">⚠️ Sin stock</span>'
+      : '';
+
+    return '<article class="card' + noStockCls + ' js-open-modal"' +
+           ' data-n="' + sn + '" data-d="' + sd + '" data-p="' + sp +
+           '" data-e="' + se + '" data-ns="' + ns + '"' +
+           ' style="cursor:pointer">' +
+           '<div class="card-img-wrap">' +
+             featHTML +
+             '<div style="font-size:3rem;text-align:center;padding:1.1rem 0 .6rem;">' + safeEmoji + '</div>' +
+           '</div>' +
+           '<div class="card-body">' +
+             '<h3 class="card-name">' + nombre + '</h3>' +
+             '<p class="card-desc">' + shortDesc + '</p>' +
+             '<span class="card-price-inline">' + price + '</span>' +
+             noStockBadge +
+             '<button class="card-tag js-open-modal"' +
+             ' data-n="' + sn + '" data-d="' + sd + '" data-p="' + sp +
+             '" data-e="' + se + '" data-ns="' + ns + '">Ver más</button>' +
+           '</div>' +
+           '</article>';
+  }
+
+  var CATNAMES_IDX = { comida:'🍽️ Comidas', bebida:'🥤 Bebidas', entrada:'🥗 Entradas', postre:'🍫 Postres' };
+  var CATORDER_IDX = ['comida','bebida','entrada','postre'];
+
+  document.getElementById('menuSections').addEventListener('click', function(e) {
+    var el = e.target.closest('.js-open-modal');
+    if (!el) return;
+    e.stopPropagation();
+    openModal(el.dataset.n, el.dataset.d, el.dataset.p, el.dataset.e, el.dataset.ns === 'true');
+  });
+
+  function renderMenuCards() {
+    var container = document.getElementById('menuSections');
+    var db = null;
+    try {
+      if (typeof IFData !== 'undefined') db = IFData.load();
+    } catch(e) {}
+
+    if (!db || !Array.isArray(db.productos) || !db.productos.length) {
+      // Fallback estático con emojis, sin categorías
+      var fallback = [
+        { n:'Bowl Verde',    d:'Espinaca, aguacate, pepino, semillas de chia y aderezo de limon.', p:'$12.99', e:'🥗' },
+        { n:'Wrap Natural',  d:'Tortilla integral, hummus, zanahoria, rucula y tomate cherry.',    p:'$9.50',  e:'🌯' },
+        { n:'Smoothie Raiz', d:'Jengibre, zanahoria, naranja, curcuma y agua de coco.',            p:'$7.00',  e:'🥤' },
+        { n:'Acai Bowl',     d:'Acai, banana, granola, arandanos y miel de agave.',                p:'$11.00', e:'🍇' },
+        { n:'Detox Juice',   d:'Pepino, menta, limon, jengibre y agua de coco.',                   p:'$6.50',  e:'🍋' },
+      ];
+      container.innerHTML = '<div class="cards-grid">' +
+        fallback.map(function(f, i) { return buildCard(f.n, f.d, f.p, false, i < 2, f.e); }).join('') +
+        '</div>';
+      return;
+    }
+
+    // Agrupar todos los productos por categoría
+    var cats = CATORDER_IDX.filter(function(cat) {
+      return db.productos.some(function(p) { return p.categoria === cat; });
+    });
+    var extraCats = db.productos
+      .map(function(p) { return p.categoria; })
+      .filter(function(c, i, arr) { return arr.indexOf(c) === i && CATORDER_IDX.indexOf(c) === -1; });
+    var allCats = cats.concat(extraCats);
+
+    // Índice global para "más vendido" (primeros 2 del total)
+    var globalProductIdx = 0;
+
+    container.innerHTML = allCats.map(function(cat) {
+      var prods = db.productos.filter(function(p) { return p.categoria === cat; });
+      var catLabel = CATNAMES_IDX[cat] || cat;
+
+      var cardsHTML = prods.map(function(p) {
+        var stockMax = getStockMax(p.id, db.stock, db.ingredientes);
+        var ings = Array.isArray(p.ingredientes) ? p.ingredientes.join(', ') : '';
+        var desc = ings || 'Producto 100% natural y vegano.';
+        var price = '$' + Number(p.precio || 0).toFixed(2);
+        var noStock = stockMax <= 0;
+        var emoji = p.emoji || '🌿';
+        var featured = globalProductIdx < 2;
+        globalProductIdx++;
+        return buildCard(p.nombre, desc, price, noStock, featured, emoji);
+      }).join('');
+
+      return '<div class="menu-cat-section">' +
+             '<div class="menu-cat-header">' + catLabel + '</div>' +
+             '<div class="cards-grid">' + cardsHTML + '</div>' +
+             '</div>';
+    }).join('');
+  }
+
+
+  /* ============================================================
+     CARRUSEL — dinámico con productos reales
+     Slide 1: productos más vendidos (index 0 y 1)
+     Slide 2: siguientes productos (index 2 y 3)
+     Slide 3: resto o badges originales como fallback
+  ============================================================ */
+  function buildCarouselSlides() {
+    var track = document.getElementById('carouselTrack');
+    var dotsEl = document.getElementById('carouselDots');
+    var db = null;
+    try {
+      if (typeof IFData !== 'undefined') db = IFData.load();
+    } catch(e) {}
+
+    // Filtrar productos SIN stock para el carrusel (solo se muestran los disponibles)
+    var allProds = (db && Array.isArray(db.productos) && db.productos.length)
+      ? db.productos
+      : null;
+    var prods = allProds
+      ? allProds.filter(function(p) {
+          try { return IFData.getMaxStock(p.id, db.stock, db.ingredientes) > 0; } catch(e) { return true; }
+        }).slice(0, 6)
+      : null;
+
+    if (!prods) {
+      // Fallback: slides originales de badges
+      track.innerHTML = [
+        '<div class="carousel-slide">' +
+          '<div class="vegan-badge"><span class="badge-pct">100%</span><span class="badge-word">Vegan</span><span class="badge-label">Sin Gluten</span></div>' +
+          '<div class="vegan-badge badge--teal"><span class="badge-pct">100%</span><span class="badge-word">Vegan</span><span class="badge-label">Orgánico</span></div>' +
+          '<div class="vegan-badge badge--lime"><span class="badge-pct">100%</span><span class="badge-word">Vegan</span><span class="badge-label">Sin Lactosa</span></div>' +
+        '</div>',
+        '<div class="carousel-slide">' +
+          '<div class="vegan-badge badge--olive"><span class="badge-pct">100%</span><span class="badge-word">Vegan</span><span class="badge-label">Natural</span></div>' +
+          '<div class="vegan-badge"><span class="badge-pct">100%</span><span class="badge-word">Vegan</span><span class="badge-label">Sin Azúcar</span></div>' +
+          '<div class="vegan-badge badge--teal"><span class="badge-pct">100%</span><span class="badge-word">Vegan</span><span class="badge-label">Proteína</span></div>' +
+        '</div>',
+        '<div class="carousel-slide">' +
+          '<div class="vegan-badge badge--lime"><span class="badge-pct">100%</span><span class="badge-word">Vegan</span><span class="badge-label">Raw</span></div>' +
+          '<div class="vegan-badge badge--olive"><span class="badge-pct">100%</span><span class="badge-word">Vegan</span><span class="badge-label">Detox</span></div>' +
+          '<div class="vegan-badge"><span class="badge-pct">100%</span><span class="badge-word">Vegan</span><span class="badge-label">Energía</span></div>' +
+        '</div>'
+      ].join('');
+      dotsEl.innerHTML = '<button class="dot dot--active" onclick="carousel.goTo(0)"></button><button class="dot" onclick="carousel.goTo(1)"></button><button class="dot" onclick="carousel.goTo(2)"></button>';
+      return 3;
+    }
+
+    // Agrupar en slides de 3 productos
+    var slides = [];
+    for (var i = 0; i < prods.length; i += 3) {
+      slides.push(prods.slice(i, i + 3));
+    }
+
+    track.innerHTML = slides.map(function(group, slideIdx) {
+      var cardsHTML = group.map(function(p, cardIdx) {
+
+        // Primeros 2 productos globales (con stock) = más vendidos
+        var globalIdx = slideIdx * 3 + cardIdx;
+        var isBestSeller = globalIdx < 2;
+        var emoji = p.emoji || '🌿';
+        var price = '$' + Number(p.precio || 0).toFixed(2);
+        var badgeHtml = isBestSeller
+          ? '<div class="cp-badge">⭐ Más vendido</div>'
+          : '';
+
+        return '<div class="carousel-product-card">' +
+               badgeHtml +
+               '<div class="cp-emoji">' + emoji + '</div>' +
+               '<div class="cp-name">' + p.nombre + '</div>' +
+               '<div class="cp-price">' + price + '</div>' +
+               '</div>';
+      }).join('');
+
+      return '<div class="carousel-slide">' + cardsHTML + '</div>';
+    }).join('');
+
+    // Dots
+    dotsEl.innerHTML = slides.map(function(_, i) {
+      return '<button class="dot' + (i === 0 ? ' dot--active' : '') + '" onclick="carousel.goTo(' + i + ')"></button>';
+    }).join('');
+
+    return slides.length;
+  }
+
+
+  /* ============================================================
+     CARRUSEL
+  ============================================================ */
+  var carousel = (function() {
+    var track, dots, total, current, timer;
+
+    function init(slideCount) {
+      track   = document.getElementById('carouselTrack');
+      dots    = document.querySelectorAll('.dot');
+      total   = slideCount;
+      current = 0;
+      resetTimer();
+    }
+
+    function update(idx) {
+      current = (idx + total) % total;
+      track.style.transform = 'translateX(-' + (current * 100) + '%)';
+      var allDots = document.querySelectorAll('.dot');
+      allDots.forEach(function(d, i) { d.classList.toggle('dot--active', i === current); });
+    }
+    function next()       { update(current + 1); resetTimer(); }
+    function prev()       { update(current - 1); resetTimer(); }
+    function goTo(i)      { update(i);            resetTimer(); }
+    function resetTimer() { clearInterval(timer); timer = setInterval(next, 4000); }
+
+    return { init: init, next: next, prev: prev, goTo: goTo };
+  })();
+
+
+  /* ============================================================
+     STICKY HEADER
+  ============================================================ */
+  var stickyObserver = new IntersectionObserver(function(entries) {
+    var entry = entries[0];
+    document.getElementById('stickyHeader').classList.toggle(
+      'sticky-header--visible',
+      entry.isIntersecting || entry.boundingClientRect.top < 0
+    );
+  }, { threshold: 0 });
+
+  stickyObserver.observe(document.getElementById('menuSection'));
+
+
+  /* ── Arrancar ── */
+  var totalSlides = buildCarouselSlides();
+  carousel.init(totalSlides);
+  renderMenuCards();
+
+  </script>
+</body>
+</html>
