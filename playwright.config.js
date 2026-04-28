@@ -27,16 +27,8 @@ module.exports = defineConfig({
   reporter: 'html',
 
   use: {
-    /* Laragon (dominio .test automático) */
-    baseURL: 'http://itsfood.test/',
-
-    // XAMPP (comentar esta si usás Laragon)
-    // baseURL: 'http://localhost/ItsFood/',
-
-    /* Capturar trace al reintentar un test fallido */
+    baseURL: 'http://localhost/materiadelaurito/itsfood/ItsFood/',
     trace: 'on-first-retry',
-
-    /* Captura de pantalla solo al fallar */
     screenshot: 'only-on-failure',
   },
 
